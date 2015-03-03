@@ -15,9 +15,9 @@ public class readData {
     private Scanner x;
     public String run(){
         
-        openFile();
+    	openFile();
         String data=readFile();
-        closeFile();
+        
         return data;
     }
     public void openFile(){
@@ -28,13 +28,17 @@ public class readData {
         }
     }
     public String readFile(){
-        
+        int count=0;
         String data="";
         String bit="";
         while(x.hasNext()){
             bit=x.next();
              data=data.concat(bit);
-          
+         count++;
+         if(count>=320){
+        	// System.out.println(data+" "+data.length());
+        	 return data;
+         }
         }
         
         return data;

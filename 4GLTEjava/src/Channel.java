@@ -1,7 +1,10 @@
+import java.util.Random;
+
 import weka.core.matrix.*;
 
 import org.jscience.mathematics.number.Complex;
 import org.jscience.mathematics.vector.ComplexMatrix;
+import org.jtransforms.fft.DoubleFFT_1D;
 
 public class Channel {
 
@@ -49,7 +52,7 @@ public class Channel {
 		 */
 		if (channel_type.equals("EPA 5Hz")) {
 
-			dopp_freq = dopp_freq-1;//5
+			dopp_freq = dopp_freq - 1;// 5
 			no_taps = 7;
 		} else if (channel_type.equals("EVA 5Hz")) {
 			path_delays[2] = 150;
@@ -164,7 +167,7 @@ public class Channel {
 
 		/*
 		 * System.out.println("Printing channel");
-		 * System.out.println("Corelation matrix : ");
+		 * System.out.println("Correlation matrix : ");
 		 * System.out.println(corr_matrix);
 		 * System.out.println("Square root matrix : ");
 		 * System.out.println(sqrt_corr_matrix);
@@ -172,8 +175,8 @@ public class Channel {
 		 * System.out.println(sqrt_corr_matrix.times(sqrt_corr_matrix));
 		 */
 
-		int l = tx1[0].length;
-
+		int l = tx1[0].length;// number of sub carriers 12
+		// System.out.println("number of sub carriers : " + l);
 		double[] f = new double[l * 2];
 		for (int k = 0; k < l; ++k) {
 
@@ -183,20 +186,31 @@ public class Channel {
 		}
 
 		Complex H_array[][] = new Complex[2 * l][2 * l];
-		ComplexMatrix H = ComplexMatrix.valueOf(H_array);
+		for (int i = 0; i < 2 * l; i++) {
+			for (int j = 0; j < 2 * l; j++) {
+				H_array[i][j] = Complex.valueOf(0.0, 0.0);
+			}
+
+		}
 
 		Complex tr_1_coeff = Complex.valueOf(0.0, 0.0);
 		Complex tr_2_coeff = Complex.valueOf(0.0, 0.0);
 		Complex tr_1_calc = Complex.valueOf(0.0, 0.0);
 		Complex tr_2_calc = Complex.valueOf(0.0, 0.0);
 		Complex A_array[] = new Complex[4];
-		// ////////////////////////////////////////////////////////////////////////////////
-		//generate random numbers for A
-		
-		/////////////////////////////////////////////////////////////////////////////////////
+		Random ran = new Random();
+		for (int i = 0; i < 4; i++) {
+			A_array[i] = Complex
+					.valueOf(ran.nextGaussian(), ran.nextGaussian());
 
-		
-		Complex B_array[] = new Complex[4];
+		}
+		// ////////////////////////////////////////////////////////////////////////////////
+		// generate random numbers for A
+		//
+		// ///////////////////////////////////////////////////////////////////////////////////
+
+		Complex B_array[] = A_array;
+
 		for (int i = 0; i < 4; ++i) {
 			B_array[i] = (A_array[0].times(sqrt_corr_matrix.get(0, i)))
 					.plus((A_array[1].times(sqrt_corr_matrix.get(1, i)))
@@ -206,7 +220,7 @@ public class Channel {
 		}
 		// ComplexMatrix B = ComplexMatrix.valueOf(B_array);
 		for (int k = 0; k < l; ++k) {
-			
+
 			// /////////////////////////////////////////////////////////////////
 			// generate random numbers for A
 			// /////////////////////////////////////////////////////////////////
@@ -218,6 +232,8 @@ public class Channel {
 										.times(sqrt_corr_matrix.get(3, i))))));
 			}
 			// B = ComplexMatrix.valueOf(B_array);
+			System.out.println("B_array : " + B_array[0].toString() + " , "
+					+ B_array[1].toString());
 
 			tr_1_coeff = Complex.valueOf(1.0, 0.0);
 			tr_2_coeff = Complex.valueOf(1.0, 0.0);
@@ -234,7 +250,7 @@ public class Channel {
 				// <<" EXP : "<<(tr_1_calc(0, 0))<<" : "<<exp(tr_1_calc(0, 0))<<
 				// endl;
 
-				tr_2_coeff = (Complex.valueOf(10.0, 0).pow((tr_1_calc.exp()
+				tr_1_coeff = (Complex.valueOf(10.0, 0).pow((tr_1_calc.exp()
 						.times(path_gains[m])))).sqrt().plus(tr_1_coeff);
 				tr_2_coeff = (Complex.valueOf(10.0, 0).pow((tr_2_calc.exp()
 						.times(path_gains[m])))).sqrt().plus(tr_2_coeff);
@@ -247,54 +263,149 @@ public class Channel {
 			 * 
 			 * H_array[k + l][ k + l] = B.get(3, 0).times(tr_2_coeff);
 			 */
-			
+
 			// 2 by 2 MIMO --> 4Paths
+			System.out.println("tr1 : " + tr_1_coeff.toString());
+
 			H_array[k][k] = B_array[0].times(tr_1_coeff);
 			H_array[k][k + l] = B_array[1].times(tr_2_coeff);
 			H_array[k + l][k] = B_array[2].times(tr_1_coeff);
 			H_array[k + l][k + l] = B_array[3].times(tr_2_coeff);
 
 		}
+		System.out.println("H_array : ");
+		for (int i = 0; i < 24; i++) {
+			for (int j = 0; j < 24; j++) {
+				System.out.print(H_array[i][j].toString() + "  ");
+			}
+			System.out.println();
+		}
 
-		H = ComplexMatrix.valueOf(H_array);
-		//////////////////////////////////////
-		H=H.times(H);///////////////////////////////////nothing special
-		
-		/////////////////////////////////////////////////
-		//noise = randn(24,1)+1i*randn(24,1); // specific for 24
-		//arma::cx_mat noise = randn < cx_mat > (2 * l, 1);
-	///////////////////////////////////////////////////////////////////////////////////////////
-		//arma::cx_mat R = H*[fft(Tx1); fft(Tx2)] + sigma*noise;
+		System.out.println();
 
-//		arma::cx_mat Rx1 = ifft(R(1:8));
-//		arma::cx_mat Rx2 = ifft(R(9:16));
-		///////////////////////////////////////////////////////////////////////////////////////
+		// ////////////////////////////////////
+		// // /////////////////////////////////
 
-		//arma::cx_mat H_1 = zeros < cx_mat > (8, 8);
+		// ///////////////////////////////////////////////
+		//
+		Complex noise_array[][] = new Complex[1][24];
+		for (int j = 0; j < noise_array.length; j++) {
+			noise_array[0][j] = Complex.valueOf(ran.nextGaussian(),
+					ran.nextGaussian());// make it random
+		}
+		// arma::cx_mat noise = randn < cx_mat > (2 * l, 1);
 
-		
-	/*	for (int y = 0; y < 8; ++y) {
+		// /////////////////////////////////////////////////////////////////////////////////////////
+		// arma::cx_mat R = H*[fft(Tx1); fft(Tx2)] + sigma*noise;
+		//
+		// //////////////////////////////////////////////////////////////////////////////////
+		Complex Tx_array[][] = new Complex[1][24];
+		tx1 = fft(tx1);
+		tx2 = fft(tx2);
+
+		for (int i = 0; i < 12; i++) {
+
+			Tx_array[0][i] = Complex.valueOf(tx1[0][i], tx1[1][i]);
+			Tx_array[0][i + 12] = Complex.valueOf(tx2[0][i], tx2[1][i]);
+
+		}
+		ComplexMatrix H = ComplexMatrix.valueOf(H_array);
+		ComplexMatrix Tx = ComplexMatrix.valueOf(Tx_array);
+		// ComplexMatrix noise = ComplexMatrix.valueOf(noise_array);
+		ComplexMatrix R = Tx.times(H); // yet to add noise for the data
+		double RX[][] = new double[2][24];
+
+		for (int i = 0; i < RX[0].length; i++) {
+			RX[0][i] = R.get(0, i).getReal();
+			RX[1][i] = R.get(0, i).getImaginary();
+		}
+		RX = ifft(RX);
+
+		System.out.println("***********************************");
+
+		System.out.println(H);
+		System.out.println();
+
+		System.out.println(Tx);
+		System.out.println();
+		// System.out.println(noise);
+		System.out.println(R);
+		System.out.println();
+
+		// arma::cx_mat H_1 = zeros < cx_mat > (8, 8);
+		Complex H1_array[][] = new Complex[16][16];
+
+		for (int y = 0; y < 8; ++y) {
 			for (int z = 0; z < 8; ++z) {
-				H_1(y, z) = H(y + 2, z + 2);
+				H1_array[y][z] = H.get(y + 2, z + 2);
 			}
 		}
 
 		for (int y = 0; y < 8; ++y) {
 			for (int z = 8; z < 16; ++z) {
-				H_1(y, z) = H(y + 2, z + 6);
+				H1_array[y][z] = H.get(y + 2, z + 6);
 			}
 		}
 
 		for (int y = 8; y < 16; ++y) {
 			for (int z = 0; z < 8; ++z) {
-				H_1(y, z) = H(y + 6, z + 2);
+				H1_array[y][z] = H.get(y + 6, z + 2);
 			}
 		}
 
 		for (int y = 8; y < 16; ++y) {
 			for (int z = 8; z < 16; ++z) {
-				H_1(y, z) = H(y + 6, z + 6);
+				H1_array[y][z] = H.get(y + 6, z + 6);
 			}
-		}*/
+		}
+
+	}
+
+	private double[][] fft(double[][] tx) {
+		double in[] = new double[24];
+
+		for (int i = 0; i < tx[0].length; ++i) {
+			in[2 * i] = tx[0][i];
+			in[2 * i + 1] = tx[1][i];
+
+		}
+
+		DoubleFFT_1D fftDo = new DoubleFFT_1D(12);
+
+		fftDo.complexForward(in);
+		int count = 0;
+		for (int j = 0; j < 12; ++j) {
+			tx[0][count] = in[2 * j];
+			tx[1][count] = in[2 * j + 1];
+			++count;
+		}
+
+		return tx;
+	}
+
+	private double[][] ifft(double[][] rx) {
+		double in1[] = new double[24];
+		double in2[] = new double[24];
+		for (int i = 0; i < rx[0].length / 2; ++i) {
+			in1[2 * i] = rx[0][i];
+			in1[2 * i + 1] = rx[1][i];
+			in2[2 * i] = rx[0][i + 12];
+			in2[2 * i + 1] = rx[1][i + 12];
+		}
+
+		DoubleFFT_1D fftDo = new DoubleFFT_1D(12);
+
+		fftDo.complexInverse(in1, true);
+		fftDo.complexInverse(in2, true);
+		int count = 0;
+		for (int j = 0; j < 12; ++j) {
+			rx[0][count] = in1[2 * j];
+			rx[1][count] = in1[2 * j + 1];
+			rx[0][count + 12] = in2[2 * j];
+			rx[1][count + 12] = in2[2 * j + 1];
+			++count;
+		}
+
+		return rx;
 	}
 }
