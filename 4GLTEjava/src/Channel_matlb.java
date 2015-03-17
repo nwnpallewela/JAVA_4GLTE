@@ -1,3 +1,4 @@
+
 import java.util.Random;
 
 import weka.core.matrix.*;
@@ -6,7 +7,7 @@ import org.jscience.mathematics.number.Complex;
 import org.jscience.mathematics.vector.ComplexMatrix;
 import org.jtransforms.fft.DoubleFFT_1D;
 
-public class Channel {
+public class Channel_matlb {
 
 	String channel_type;
 	String corr_type;
@@ -14,7 +15,7 @@ public class Channel {
 	double sigma;
 	ComplexMatrix H_out;
 
-	public Channel(String channel_type, String corr_type, double fcarry,
+	public Channel_matlb(String channel_type, String corr_type, double fcarry,
 			double sigma) {
 		this.channel_type = channel_type;
 		this.corr_type = corr_type;
@@ -442,7 +443,6 @@ public class Channel {
 		for (int i = 0; i < rx[0].length / 2; ++i) {
 			in1[2 * i] = rx[0][i];
 			in1[2 * i + 1] = rx[1][i];
-			
 			in2[2 * i] = rx[0][i + 12];
 			in2[2 * i + 1] = rx[1][i + 12];
 		}
@@ -461,49 +461,5 @@ public class Channel {
 		}
 
 		return rx;
-	}
-}
-
-class DFTARRAY {
-
-	Complex[][] DF;
-
-	DFTARRAY() {
-		DF = new Complex[16][16];
-		Complex val = Complex.valueOf(0, 0);
-		for (int i = 0; i < DF.length / 2; i++) {
-			for (int j = 0; j < DF.length / 2; j++) {
-				val = Complex.valueOf(0, -1 * (2 * Math.PI * (i) * (j) / 8))
-						.exp();
-				if (Math.abs(val.getReal()) < Math.pow(10, -10)) {
-					val = Complex.valueOf(0, val.getImaginary());
-				}
-				if (Math.abs(val.getImaginary()) < Math.pow(10, -10)) {
-					val = Complex.valueOf(val.getReal(), 0);
-				}
-
-				DF[i][j] = val;
-
-				DF[i + 8][j + 8] = DF[i][j];
-				DF[i][j + 8] = Complex.valueOf(0, 0);
-				DF[i + 8][j] = Complex.valueOf(0, 0);
-			}
-		}
-
-	}
-
-	public Complex[][] getDFT() {
-		return DF;
-	}
-
-	public void printDFT() {
-		System.out.println("DFT Matrix :");
-		for (int i = 0; i < DF.length; i++) {
-			for (int j = 0; j < DF.length; j++) {
-				System.out.print(DF[i][j] + " \t ");
-			}
-			System.out.println();
-		}
-
 	}
 }

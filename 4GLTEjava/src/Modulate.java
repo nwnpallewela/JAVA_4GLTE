@@ -30,10 +30,15 @@ public class Modulate {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	for (int j = 0; j <= (encodeddata.length() - 6); j = j + 6) {
 		index = findindex(encodeddata.substring(j, j+6));
-		
+	//	System.out.println(encodeddata.substring(j, j+6)+" :: "+index);
 
+		/*modulateddata[0][count] = real[index]/Math.sqrt(42.0);
+		modulateddata[1][count] = complex[index]/Math.sqrt(42.0);
+		*/
 		modulateddata[0][count] = real[index];
 		modulateddata[1][count] = complex[index];
+		
+		
 		count++;
 		//	cout<<encodeddata.substr(j, 6)<<" "<<real[index]<<" "<<complex[index]<<endl;
 	}
@@ -44,7 +49,7 @@ public class Modulate {
 int findindex(String code1) {
 	
 	char code[]=code1.toCharArray();
-	return ((code[0] - 48) + (code[2] - 48) * 2 + (code[2] - 48) * 4
+	return ((code[0] - 48) + (code[1] - 48) * 2 + (code[2] - 48) * 4
 			+ (code[3] - 48) * 8 + (code[4] - 48) * 16 + (code[5] - 48) * 32);
 }
 

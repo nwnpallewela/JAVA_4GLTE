@@ -7,6 +7,8 @@
 
 import java.util.*;
 import java.io.*;
+
+import weka.classifiers.bayes.net.search.fixed.FromFile;
 /**
  *
  * @author User
@@ -20,17 +22,20 @@ public class dataGen {
         
         List<Character> data= new ArrayList<Character>(); 
         
-        for (int i = 0; i < size; i++) {
-           number=bit.nextInt(2);
-        	//number=1;
-            data.add(number.toString().charAt(0));
-        }
        
-        String datawrite = data.toString();
-         
-        openFile();
-        addRecords(datawrite);
-        closeFile();
+        	for (int j = 0; j < 320; j++) {
+        		 number=bit.nextInt(2);
+             	//number=1;
+                 data.add(number.toString().charAt(0));
+             }
+            
+             String datawrite = data.toString();
+              
+            
+             addRecords(datawrite);
+            
+			
+        
         
     }
     public void openFile(){
