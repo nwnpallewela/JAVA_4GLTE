@@ -49,7 +49,7 @@ public class Main {
 
 		// datagen.run(size_data);
 
-		int size_data = 320 * 100000; // bit size should be a multiple of 320
+		int size_data = 320 * 1000; // bit size should be a multiple of 320
 
 		double endTime = System.nanoTime(); // create data file
 		double duration = (endTime - startTime);
