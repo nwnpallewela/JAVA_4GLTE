@@ -323,12 +323,13 @@ public class Channel {
 
 		// //////////////////////////////////////////////
 
-		Complex noise_array[][] = new Complex[1][24];
+		Complex noise_array[][] = new Complex[24][1];
 		for (int j = 0; j < noise_array.length; j++) {
-			noise_array[0][j] = Complex.valueOf(ran.nextGaussian(),
+			noise_array[j][0] = Complex.valueOf(ran.nextGaussian(),
 					ran.nextGaussian());// make it random
 		}
-
+		 ComplexMatrix noise = ComplexMatrix.valueOf(noise_array);
+		
 		// //////////////////////////////////////////////////////////////////////////////////
 		Complex Tx_array[][] = new Complex[24][1];
 
@@ -344,11 +345,15 @@ public class Channel {
 
 		ComplexMatrix H = ComplexMatrix.valueOf(H_array);
 		ComplexMatrix Tx = ComplexMatrix.valueOf(Tx_array);
-		// ComplexMatrix noise = ComplexMatrix.valueOf(noise_array);
-		ComplexMatrix R = H.times(Tx); // yet to add noise for the data
-
-	//	System.out.println(R);
-
+		/*System.out.println("Chanel Tx matrix");
+		System.out.println(Tx);*/
+		//System.out.println(sigma);
+		
+		ComplexMatrix R = H.times(Tx).plus(noise.times(Complex.valueOf(sigma,0.0))); // yet to add noise for the data
+		//System.out.println(H);
+	/*	System.out.println("This is noise");
+	System.out.println(noise.times(Complex.valueOf(sigma,0.0)));
+	*/
 		double RX[][] = new double[2][24];
 
 		for (int i = 0; i < RX[0].length; i++) {
@@ -404,10 +409,17 @@ public class Channel {
 		DFTARRAY dft = new DFTARRAY();
 		Complex[][] dftArray = dft.getDFT();
 		ComplexMatrix DF = ComplexMatrix.valueOf(dftArray);
+//		System.out.println("DFT matrix");
+//		System.out.println(DF);		
+//		System.out.println();
+//		System.out.println();
 		H_out = H1_mat.times(DF);
 		// System.out.println(H0);
 		return RX;
 
+	}
+	public void setSigma(double s){
+		sigma=s;
 	}
 
 	public ComplexMatrix getHout() {

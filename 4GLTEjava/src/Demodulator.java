@@ -80,7 +80,7 @@ public class Demodulator {
 	int findindex(String code1) {
 		
 		char code[]=code1.toCharArray();
-		return ((code[0] - 48) + (code[2] - 48) * 2 + (code[2] - 48) * 4
+		return ((code[0] - 48) + (code[1] - 48) * 2 + (code[2] - 48) * 4
 				+ (code[3] - 48) * 8 + (code[4] - 48) * 16 + (code[5] - 48) * 32);
 	}
 

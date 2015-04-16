@@ -9,7 +9,8 @@ import java.io.IOException;
 import org.jscience.mathematics.vector.ComplexMatrix;
 
 import weka.core.matrix.Matrix;
-import weka.core.matrix.QRDecomposition;
+
+//import weka.core.matrix.QRDecomposition;
 
 /**
  *
@@ -32,24 +33,45 @@ public class Main {
 		double[][] antenna1_ch = new double[2][12];
 		double[][] antenna2_ch = new double[2][12];
 		Modulate mod = new Modulate();
-		Channel ch = new Channel("EPA 5Hz", "Low", 2, 2);
+	//	double Eb_No=0.0;
+		
 		DeMapper DM = new DeMapper();
 		Equalizer Eq = new Equalizer();
 		Demodulator Dmod = new Demodulator();
 		Decoder dec = new Decoder();
+		Channel ch = new Channel("EPA 5Hz", "Low", 2,dec.getSigma()/Math.sqrt(2)); // Eb_No=63 sigma=0.24 sigma^2=0.05
 		Matrix Y;
 		String received_data = "";
 		double Y_[][] = new double[32][1];
 		double y_[] = new double[32];
 		// ////////////////////////////////////////////////////
-		int decoder_num = 2; // this is for decoder testing purposes
+		// int decoder_num = 2; // this is for decoder testing purposes
+		double lc = 2.5;
+		int iterations = 6;
+		double LLR[] = new double[40];
+
+		double LLR1[] = new double[40];
+		double LLR2[] = new double[40];
+		double A1[][] = new double[17][44];
+		double A2[][] = new double[17][44];
+
+		int I1[][] = new int[40][2];
+		int I2[][] = new int[40][2];
+		double leuk1[] = new double[40];
+		double leuk2[] = new double[40];
+		double luk[] = new double[40];
+		double R1[] = new double[40];
+		double R2[] = new double[40];
+		int y1[] = new int[40];
+		int y2[] = new int[40];
+		double LEUK[] = new double[40];
 		// ////////////////////////////////////////////////////
 		double startTime = System.nanoTime();
-		dataGen datagen = new dataGen();
+		// dataGen datagen = new dataGen();
 
 		// datagen.run(size_data);
 
-		int size_data = 320 * 1000; // bit size should be a multiple of 320
+		int size_data = 320 * 1; // bit size should be a multiple of 320
 
 		double endTime = System.nanoTime(); // create data file
 		double duration = (endTime - startTime);
@@ -85,6 +107,9 @@ public class Main {
 			read.openFile();
 			String data = read.readFile(); // read data from file
 			/*
+			 * System.out.println("DATA : "); System.out.println(data);
+			 */
+			/*
 			 * System.out.println("Data length :" + data.length() + " : " +
 			 * i_size / 320);
 			 */read.closeFile();
@@ -111,8 +136,10 @@ public class Main {
 			 * System.out.println("turbo encode runtime =  " + (encode_time /
 			 * 1000000) + " ms");
 			 */
-			// System.out.println(encodeddata);
 
+		/*	System.out.println("Encoded data :");
+			System.out.println(encodeddata);
+*/
 			/*
 			 * System.out .println(
 			 * "********************************************************************"
@@ -129,6 +156,12 @@ public class Main {
 			/*
 			 * System.out.println("modulating runtime =  " + (modulate_time /
 			 * 1000000) + " ms");
+			 */
+			/*
+			 * for (int i = 0; i < 2; i++) { for (int j = 0; j <
+			 * encodeddata.length() / 6; j++) {
+			 * System.out.print(modulateddata[i][j] + " "); }
+			 * System.out.println(); }
 			 */
 			/*
 			 * for (int i = 0; i < 2; i++) {
@@ -149,13 +182,12 @@ public class Main {
 			 * System.out.println(modulateddata[0][j] + "+" +
 			 * modulateddata[0][j] + "i"); }
 			 */
-			/*double mod_array[][] = new double[32][1];
-			for (int i = 0; i < 16; i++) {
-				mod_array[i][0] = modulateddata[0][i];
-				mod_array[i + 16][0] = modulateddata[1][i];
-			}
-			Matrix S = Matrix.constructWithCopy(mod_array);
-			System.out.println(S);*/
+			/*
+			 * double mod_array[][] = new double[32][1]; for (int i = 0; i < 16;
+			 * i++) { mod_array[i][0] = modulateddata[0][i]; mod_array[i +
+			 * 16][0] = modulateddata[1][i]; } Matrix S =
+			 * Matrix.constructWithCopy(mod_array); System.out.println(S);
+			 */
 			FFT fft = new FFT(modulateddata);
 			startTime = System.nanoTime();
 			fftout = fft.calculate();
@@ -166,7 +198,8 @@ public class Main {
 			/*
 			 * System.out.println("FFT data : "); for (int i = 0; i <
 			 * fftout[0].length; ++i) { System.out.println(i + " " +
-			 * fftout[0][i] + " + " + fftout[1][i]+"i"); } System.out.println();
+			 * fftout[0][i] + " + " + fftout[1][i] + "i"); }
+			 * System.out.println();
 			 */
 			// /////////////////////////////////////////////////////////////////////////////////////////////////IFFT
 
@@ -238,6 +271,12 @@ public class Main {
 
 			}
 
+			/*
+			 * for (int i = 0; i < count1; i++) {
+			 * System.out.println(antenna1[0][i] + " + " + antenna1[1][i] +
+			 * "i  -----   " + antenna2[0][i] + " + " + antenna2[1][i] + "i"); }
+			 */
+
 			endTime = System.nanoTime();
 
 			multiplexing_time_full = multiplexing_time_full
@@ -269,9 +308,9 @@ public class Main {
 			//
 			// System.out.println("size :" + antenna2[0].length);
 			received_data = "";
-			int count_print = 0;
-			int count_fft = 0;
-			int count_ifft = 0;
+			/*
+			 * int count_print = 0; int count_fft = 0; int count_ifft = 0;
+			 */
 
 			for (int i = 0; i < antenna2[0].length; i = i + 12) { // count1 = 0;
 
@@ -285,18 +324,33 @@ public class Main {
 					// count1++;
 				}
 
+				/*
+				 * for (int i3 = 0; i3 < 12; i3++) {
+				 * System.out.println(antenna1_ch[0][i3] + " + " +
+				 * antenna1_ch[1][i3] + "i  -----  " + antenna2_ch[0][i3] +
+				 * " + " + antenna2_ch[1][i3] + "i"); }
+				 */
+
 				RX = ch.run_channel(antenna1_ch, antenna2_ch); // commented to
 				// test correctness
 				// /////////////////////////////////////////////////
 				/*
+				 * for (int j = 0; j < RX.length; j++) {
+				 * System.out.println(RX[0][j]+" + "+RX[1][j]+"i"); }
+				 */
+				/*
 				 * for (int j_1 = 0; j_1 < antenna2_ch[0].length; j_1++) {
+				 * System.out.print(RX[0][j_1] + " + " + RX[1][j_1] +
+				 * "  --------- " + RX[0][j_1 + 12] + " + " + RX[1][j_1 + 12]);
 				 * 
-				 * RX[0][j_1] = antenna1_ch[0][j_1]; RX[1][j_1] =
-				 * antenna1_ch[1][j_1]; RX[0][j_1 + 12] = antenna2_ch[0][j_1];
-				 * RX[1][j_1 + 12] = antenna2_ch[1][j_1];
+				 * RX[0][j_1] = 5; RX[1][j_1] = 1; RX[0][j_1 + 12] = 5;
+				 * RX[1][j_1 + 12] = 1;
+				 * 
+				 * System.out.println();
 				 * 
 				 * }
 				 */
+
 				// ///////////////////////////////////////////
 				endTime = System.nanoTime();
 				channel_time_full = channel_time_full + (endTime - startTime);
@@ -304,7 +358,10 @@ public class Main {
 				startTime = System.nanoTime();
 
 				y_ = DM.get_demapped_rx(RX);
-
+				/*
+				 * System.out.println("Demapped data :"); for (int j = 0; j <
+				 * y_.length; j++) { System.out.println(y_[j]); }
+				 */
 				endTime = System.nanoTime();
 				demapper_time_full = demapper_time_full + (endTime - startTime);
 				/*
@@ -326,13 +383,19 @@ public class Main {
 				}
 				Y = Matrix.constructWithCopy(Y_);
 
+				// System.out.println(ch.getHout());
+
 				Eq.genH(ch.getHout()); // calculate new H in Equalizer
-				//Eq.RS(S);
-				//System.out.println("**********************");
+				// Eq.RS(S);
+				// System.out.println("**********************");
 				endTime = System.nanoTime();
 				getH_time_full = getH_time_full + (endTime - startTime);
 				startTime = System.nanoTime();
 				y_ = Eq.GetLSD_Y(Y); //
+				/*
+				 * for (int j = 0; j < y_.length; j++) {
+				 * System.out.println(y_[j]); }
+				 */
 				endTime = System.nanoTime();
 
 				equalizer_time_full = equalizer_time_full
@@ -389,17 +452,84 @@ public class Main {
 			 * System.out.println(received_data.length() + " : " +
 			 * encodeddata.length());
 			 */
-			/* System.out.println("Received data : "+received_data); */
+		//	System.out.println(received_data);
 			/* System.out.println("Encoded  data : "+encodeddata); */
 			int decode[] = new int[data_block_size];
 			int decoded_data[] = new int[data.length()];
 			int count = 0;
 			startTime = System.nanoTime();
 			for (int i1 = 0; i1 < encodeddata.length(); i1 = i1 + 132) {
+				// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				dec.decoder_log_map_it(received_data.substring(i1, i1 + 132),
+						1, data_block_size, luk);
+				/*LLR1 = dec.getLLR1();
+			System.out.println("This is LLR1");
+				for (int i = 0; i < LLR1.length; i++) {
+					System.out.println(LLR1[i]);
+				}*/
+				// A1=dec.get_A();
+				// I1=dec.get_interleave_table();
+				leuk1 = dec.get_leuk();
+				/*R1 = dec.getR();
+				 System.out.println("This is R");
+				 for (int i = 0; i < R1.length; i++) {
+					System.out.println(R1[i]);
+				}*/
+				
+				//R1 = dec.getR();
+				y1 = dec.getY();
+				dec.decoder_log_map_it(received_data.substring(i1, i1 + 132),
+						2, data_block_size, leuk1);
+				 LLR2=dec.getLLR1();
+				/* System.out.println("This is LLR2");
+				 for (int i = 0; i < LLR2.length; i++) {
+					System.out.println(LLR2[i]);
+				}*/
+				// A2=dec.get_A();
+				I2 = dec.get_interleave_table();
+				leuk2 = dec.get_leuk();
+				R2 = dec.getR();
+				y2 = dec.getY();
+				LEUK = leuk2; // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+				// LEUK = leuk1
+				
+				lc=dec.getLC();
+				for (int n = 3; n <= iterations; ++n) { // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+					//System.out.println("This is LLR[] in interation "+n);
+					if ((n % 2) == 1) {
+						// for i=1:1:data_block_size
+						for (int i = 0; i < data_block_size; ++i) {
+							LLR[i] = R1[i] + LEUK[i];
+							LEUK[i] = LLR[i] - LEUK[i] - 2 * lc * y1[2 * i];
+							//System.out.println(LLR[i]);
+						}
+					} else {
+						for (int i = 0; i < data_block_size; ++i) {
+							LLR[I2[i][1]] = R2[i] + LEUK[I2[i][1]];// %%%%%%%%%%%%%%%%%%%%%%%
+							LEUK[I2[i][1]] = LLR[I2[i][1]] - LEUK[I2[i][1]] - 2
+									* lc * y2[2 * i]; // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+							//System.out.println(LLR[i]);
+						}
+						
+				
 
-				decode = dec.decoder_log_map(
-						received_data.substring(i1, i1 + 131), decoder_num,
-						data_block_size);
+					}
+
+				}// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+				//System.out.println("This is LEUK");
+				for (int i = 0; i < 40; i++) {
+					
+					 if (LLR[i] > 0) {
+				//	System.out.println(LEUK[i]);
+					//if (LEUK[i] > 0) {
+						decode[i] = 1;
+					} else {
+						decode[i] = 0;
+					}
+
+				}
+				// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 				for (int j = 0; j < data_block_size; ++j) {
 					decoded_data[count] = decode[j];
 					count++;
@@ -468,6 +598,7 @@ public class Main {
 		if (rawdata_in.length() == count) {
 			for (int i = 0; i < rawdata_in.length(); ++i) {
 				if (((int) rawdata[i] - 48) != decoded_data[i]) {
+					// System.out.println(rawdata[i]+" ---  "+decoded_data[i]);
 					error++;
 				}
 			}

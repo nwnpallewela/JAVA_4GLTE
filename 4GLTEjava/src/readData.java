@@ -22,7 +22,9 @@ public class readData {
     }
     public void openFile(){
         try{
-            x = new Scanner(new File("data.txt"));
+        	// x = new Scanner(new File("alt.txt"));
+           x = new Scanner(new File("data.txt"));
+        	// x = new Scanner(new File("ones.txt"));
         }catch(Exception e){
             System.out.println(e);
         }
