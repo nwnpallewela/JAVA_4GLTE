@@ -13,6 +13,9 @@ public class Channel {
 	double fcarry;
 	double sigma;
 	ComplexMatrix H_out;
+	ComplexMatrix H;
+	Complex H_array_sum;
+	Complex H_sum_norm;
 
 	public Channel(String channel_type, String corr_type, double fcarry,
 			double sigma) {
@@ -187,23 +190,8 @@ public class Channel {
 
 		Matrix sqrt_corr_matrix = corr_matrix.sqrt();
 
-		/*
-		 * System.out.println("Printing channel");
-		 * System.out.println("Correlation matrix : ");
-		 * System.out.println(corr_matrix);
-		 * System.out.println("Square root matrix : ");
-		 * System.out.println(sqrt_corr_matrix);
-		 * System.out.println("Square root matrix * Square root matrix : ");
-		 * System.out.println(sqrt_corr_matrix.times(sqrt_corr_matrix));
-		 */
-		/*
-		 * System.out.println("Correlation matrix : ");
-		 * System.out.println(corr_matrix);
-		 * System.out.println("Square root matrix : ");
-		 * System.out.println(sqrt_corr_matrix);
-		 */
+		
 		int l = tx1[0].length;// number of sub carriers 12
-		// System.out.println("number of sub carriers : " + l);
 		double[] f = new double[l * 2];
 		for (int k = 0; k < l; ++k) {
 
@@ -211,11 +199,7 @@ public class Channel {
 			f[l + k] = fcarry - 59 * 15 * 0.000001 + 15 * 0.000001 * k;
 
 		}
-		/*
-		 * System.out.println("F value:"+f.length); for (int i = 0; i <
-		 * f.length; i++) { System.out.print(f[i]+"  "); } System.out.println();
-		 */
-
+		
 		Complex H_array[][] = new Complex[2 * l][2 * l];
 		for (int i = 0; i < 2 * l; i++) {
 			for (int j = 0; j < 2 * l; j++) {
@@ -235,11 +219,7 @@ public class Channel {
 					.valueOf(ran.nextGaussian(), ran.nextGaussian());
 
 		}
-		/*
-		 * System.out.println("A array:" + A_array.length); for (int i = 0; i <
-		 * A_array.length; ++i) { System.out.print(A_array[i] + "  "); }
-		 * System.out.println();
-		 */
+		
 		// ////////////////////////////////////////////////////////////////////////////////
 		// generate random numbers for A
 		//
@@ -254,13 +234,7 @@ public class Channel {
 									.plus((A_array[3].times(sqrt_corr_matrix
 											.get(3, i))))));
 		}
-		// System.out.println("B array:" + B_array.length);
-		/*
-		 * for (int i = 0; i < B_array.length; ++i) {
-		 * System.out.print(B_array[i] + "  "); }
-		 */
-
-		// ComplexMatrix B = ComplexMatrix.valueOf(B_array);
+		
 		for (int k = 0; k < l; ++k) {
 
 			// /////////////////////////////////////////////////////////////////
@@ -270,30 +244,19 @@ public class Channel {
 						ran.nextGaussian());
 
 			}
-			// /////////////////////////////////////////////////////////////////
-			/*
-			 * System.out.println("B_array : " + B_array[0].toString() + " , " +
-			 * B_array[1].toString());
-			 */
+			
 			for (int i = 0; i < 4; ++i) {
 				B_array[i] = (A_array[0].times(sqrt_corr_matrix.get(0, i)))
 						.plus(A_array[1].times(sqrt_corr_matrix.get(1, i)))
 						.plus(A_array[2].times(sqrt_corr_matrix.get(2, i)))
 						.plus(A_array[3].times(sqrt_corr_matrix.get(3, i)));
-				// B_array[i]=A_array[0].times(sqrt_corr_matrix.get(0,
-				// i)).plus(that)
+				
 
 			}
-			// B = ComplexMatrix.valueOf(B_array);
-			/*
-			 * System.out.println("B_array : " + B_array[0].toString() + " , " +
-			 * B_array[1].toString());
-			 */
+			
 			tr_1_coeff = Complex.valueOf(1.0, 0.0);
 			tr_2_coeff = Complex.valueOf(1.0, 0.0);
-			// cout<<"EXP : "<<tr_1_coeff(0, 0)<<" : "<<exp(tr_1_coeff(0,
-			// 0))<<endl;
-			// for m =1:no_taps
+			
 			for (int m = 0; m < no_taps; ++m) {
 				tr_1_calc = Complex.valueOf(0.0, 2.0 * Math.PI * f[k]
 						* path_delays[m]);
@@ -306,21 +269,15 @@ public class Channel {
 						.plus(tr_2_calc.exp()).plus(tr_2_coeff);
 			}
 
-			// 2 by 2 MIMO --> 4Paths
-			// System.out.println("tr1 : " + tr_1_coeff.toString());
-
 			H_array[k][k] = B_array[0].times(tr_1_coeff);
 			H_array[k][k + l] = B_array[1].times(tr_2_coeff);
 			H_array[k + l][k] = B_array[2].times(tr_1_coeff);
 			H_array[k + l][k + l] = B_array[3].times(tr_2_coeff);
-
+			
+			
 		}
 
-		// System.out.println();
-
-		// ///////////////////////////////////
-		// / /////////////////////////////////
-
+	
 		// //////////////////////////////////////////////
 
 		Complex noise_array[][] = new Complex[24][1];
@@ -343,17 +300,23 @@ public class Channel {
 
 		}
 
-		ComplexMatrix H = ComplexMatrix.valueOf(H_array);
+		H = ComplexMatrix.valueOf(H_array);
 		ComplexMatrix Tx = ComplexMatrix.valueOf(Tx_array);
-		/*System.out.println("Chanel Tx matrix");
-		System.out.println(Tx);*/
-		//System.out.println(sigma);
 		
-		ComplexMatrix R = H.times(Tx).plus(noise.times(Complex.valueOf(sigma,0.0))); // yet to add noise for the data
-		//System.out.println(H);
-	/*	System.out.println("This is noise");
-	System.out.println(noise.times(Complex.valueOf(sigma,0.0)));
-	*/
+	//	System.out.println(H);
+		//sigma=0;
+	//	System.out.println(sigma);
+		ComplexMatrix R = H.times(Tx);
+		/*System.out.println("This is R before");
+		System.out.println(R);*/
+		
+				R=R.plus(noise.times(Complex.valueOf(sigma,0.0))); // yet to add noise for the data
+	/*System.out.println("This is noise");
+		System.out.println(noise.times(Complex.valueOf(sigma,0.0)));*/
+		/*System.out.println("This is R");
+		System.out.println(R);*/
+		
+		
 		double RX[][] = new double[2][24];
 
 		for (int i = 0; i < RX[0].length; i++) {
@@ -362,18 +325,6 @@ public class Channel {
 		}
 		RX = ifft(RX);
 
-		// System.out.println("***********************************");
-
-		// System.out.println(H);
-		// System.out.println();
-
-		/*
-		 * System.out.println(Tx); System.out.println(); //
-		 * System.out.println(noise); System.out.println(R);
-		 * System.out.println();
-		 */
-
-		// arma::cx_mat H_1 = zeros < cx_mat > (8, 8);
 		Complex H1_array[][] = new Complex[16][16];
 
 		for (int y = 0; y < 8; ++y) {
@@ -400,21 +351,13 @@ public class Channel {
 			}
 		}
 
-		/*
-		 * for (int i = 0; i < H1_array.length; i++) { for (int j = 0; j <
-		 * H1_array.length; j++) { System.out.print(H1_array[i][j] + " "); }
-		 * System.out.println(); }
-		 */
+		
 		ComplexMatrix H1_mat = ComplexMatrix.valueOf(H1_array);
 		DFTARRAY dft = new DFTARRAY();
 		Complex[][] dftArray = dft.getDFT();
 		ComplexMatrix DF = ComplexMatrix.valueOf(dftArray);
-//		System.out.println("DFT matrix");
-//		System.out.println(DF);		
-//		System.out.println();
-//		System.out.println();
+
 		H_out = H1_mat.times(DF);
-		// System.out.println(H0);
 		return RX;
 
 	}
@@ -424,6 +367,9 @@ public class Channel {
 
 	public ComplexMatrix getHout() {
 		return H_out;
+	}
+	public ComplexMatrix getH() {
+		return H;
 	}
 
 	private double[][] fft(double[][] tx) {

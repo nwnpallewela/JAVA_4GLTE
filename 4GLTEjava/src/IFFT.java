@@ -24,9 +24,7 @@ public class IFFT {
 			}
 		}
 		
-		/*for(int i=0;i<input.length;i=i+2){
-			System.out.println((i/2)+"  "+input[i]+"   "+input[i+1]);
-		}*/
+		
 	}
 
 	public double[][] calculate() {

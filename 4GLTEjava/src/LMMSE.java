@@ -1,31 +1,46 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-import java.io.IOException;
-
+import org.jscience.mathematics.number.Complex;
 import org.jscience.mathematics.vector.ComplexMatrix;
 
 import weka.core.matrix.Matrix;
 
-//import weka.core.matrix.QRDecomposition;
+public class LMMSE {
 
-/**
- *
- * @author User
- */
-public class Main {
-	static ComplexMatrix H;
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
 
-	/**
-	 * @param args
-	 *            the command line arguments
-	 */
-	public static void main(String[] args) throws IOException {
 		// //////////////////////////////////////////////////// don't change the
 		// block size
+		ComplexMatrix H;
+		ComplexMatrix H_her;
+		Complex H_her_array[][] = new Complex[24][24];
+	
+		ComplexMatrix C;
+		ComplexMatrix C_her;
+		Complex C_her_array[][] = new Complex[24][24];
+		ComplexMatrix Ydash;
+		//ComplexMatrix Pd;
+		Complex Pd_array[][] = new Complex[24][24];
+
+		for (int i = 0; i < 24; i++) {
+
+			for (int j = 0; j < 24; j++) {
+				if(i==j){
+					Pd_array[i][i] = Complex.valueOf(42.0, 0.0);
+				if (i == 0 || i == 1 || i == 10 || i == 11 || i == 12
+						|| i == 13 || i == 22 || i == 23) {
+					Pd_array[i][j] = Complex.valueOf(0.0, 0.0);
+				} 
+				}else{
+					Pd_array[i][j] = Complex.valueOf(0.0, 0.0);
+					
+				}
+			}
+		}
+		ComplexMatrix Pd = ComplexMatrix.valueOf(Pd_array);
+		//System.out.println(Pd);
+		Complex Y_array[][] = new Complex[16][1];
+
+		double[][] y_out = new double[2][16];
 		final int data_block_size = 40;
 		double[][] fftout;
 		double[][] ifftout;
@@ -33,17 +48,31 @@ public class Main {
 		double[][] antenna1_ch = new double[2][12];
 		double[][] antenna2_ch = new double[2][12];
 		Modulate mod = new Modulate();
-
+		IFFT_zeroforcing IFFT_z = new IFFT_zeroforcing();
+		ML_zeroforcing ML = new ML_zeroforcing();
 		DeMapper DM = new DeMapper();
 
 		Demodulator Dmod = new Demodulator();
 		Decoder dec = new Decoder();
-		Channel ch = new Channel("EPA 5Hz", "Low", 2, dec.getSigma()); // Eb_No=63
-																		// sigma=0.24
-																		// sigma^2=0.05
-	//	System.out.println(dec.getSigma());
+		Channel ch = new Channel("EPA 5Hz", "Low", 2, dec.getSigma()
+				/ Math.sqrt(2)); // Eb_No=63 sigma=0.24 sigma^2=0.05
 		double Rsq = (20.36 * dec.getSigma() * dec.getSigma());
-		Rsq = 10000000;
+		Rsq = 100000;
+		
+		Complex sigma_mat_array[][] = new Complex[24][24];
+		for (int i = 0; i < 24; i++) {
+
+			for (int j = 0; j < 24; j++) {
+				if(i==j){
+					sigma_mat_array[i][i] = Complex.valueOf(dec.getSigma() * dec.getSigma(), 0.0);
+				
+				}else{
+					sigma_mat_array[i][j] = Complex.valueOf(0.0, 0.0);
+					
+				}
+			}
+		}
+		ComplexMatrix sigma_mat=ComplexMatrix.valueOf(sigma_mat_array);
 		Equalizer Eq = new Equalizer(Rsq);
 		// Equalizer Eq = new Equalizer();
 		Matrix Y;
@@ -55,8 +84,7 @@ public class Main {
 		double lc = 2.5;
 		int iterations = 6;
 		double LLR[] = new double[40];
-		double LLR1[] = new double[40];
-		double LLR2[] = new double[40];
+
 		/*
 		 * double LLR1[] = new double[40]; double LLR2[] = new double[40];
 		 * double A1[][] = new double[17][44]; double A2[][] = new
@@ -238,21 +266,47 @@ public class Main {
 				// //////////////////////////////////////////////////////////////////////////////////////////De-mapping
 				// Rx
 				startTime = System.nanoTime();
-
-				y_ = DM.get_demapped_rx(RX);
-
+				H=ch.getH();
+				//H_her=H;
+				for (int j = 0; j < 24; j++) {
+					for (int k = 0; k < 24; k++) {
+						H_her_array[j][k]= Complex.valueOf(H.get(j, k).getReal(), (-1)*H.get(j, k).getImaginary());  //(i, j)=Complex ;// H.get(i, j).getImaginary();
+					}
+				}
+				H_her=ComplexMatrix.valueOf(H_her_array);
+				H_her=H_her.transpose();
+				//System.out.println(Pd.times(H).times(H_her).plus(sigma_mat));
+				C=Pd.times(H).times(H_her).plus(sigma_mat).inverse().times(Pd).times(H);
+				//System.out.println(C_her);
+				for (int j = 0; j < 24; j++) {
+					for (int k = 0; k < 24; k++) {
+						C_her_array[j][k]= Complex.valueOf(C.get(j, k).getReal(), (-1)*C.get(j, k).getImaginary());  //(i, j)=Complex ;// H.get(i, j).getImaginary();
+					}
+				}
+				C_her=ComplexMatrix.valueOf(C_her_array);
+				C_her=C_her.transpose();
+				//H = Pd.times(ch.getH()).times(ch.getH().);//ch.getH().inverse();
+				// y_ = DM.get_demapped_rx(RX);
+				y_ = DM.get_demapped_rx_ZF(RX, C_her);
 				endTime = System.nanoTime();
 				demapper_time_full = demapper_time_full + (endTime - startTime);
 				// //////////////////////////////////////////////////////////////////////////////////////////
 				startTime = System.nanoTime();
 
-				for (int j1 = 0; j1 < 32; j1++) {
-					Y_[j1][0] = y_[j1];
+				for (int j1 = 0; j1 < 16; j1++) {
+					// Y_[j1][0] = y_[j1];
+					Y_array[j1][0] = Complex.valueOf(y_[j1], y_[j1 + 16]);
 				}
-				Y = Matrix.constructWithCopy(Y_);
 
-				Eq.genH(ch.getHout()); // ///////////////////////////////////////////////////////////////////calculate
-										// new H in Equalizer
+				// Y = Matrix.constructWithCopy(Y_);
+				Ydash = ComplexMatrix.valueOf(Y_array);
+				// System.out.println(Ydash);
+
+				// System.out.println(H);
+
+				// Eq.genH(ch.getHout());
+				// /////////////////////////////////////////////////////////////////////calculate
+				// new H in Equalizer
 				endTime = System.nanoTime();
 
 				getH_time_full = getH_time_full + (endTime - startTime);
@@ -260,12 +314,21 @@ public class Main {
 				// //////////////////////////////////////////////////////////////////////////////////////////
 				// Running Equalizer and get Y
 				startTime = System.nanoTime();
-				y_ = Eq.GetLSD_Y(Y, Rsq); //
+				// y_ = Eq.GetLSD_Y(Y, Rsq); //
+				// Ydash = H.times(Ydash);
+				// System.out.println(Ydash);
 
+				y_out = IFFT_z.calculate(Ydash);
+				y_ = ML.Decision(y_out);
 				endTime = System.nanoTime();
 
 				equalizer_time_full = equalizer_time_full
 						+ (endTime - startTime);
+
+				/*
+				 * for (int k = 0; k < y_out.length; k++) {
+				 * System.out.println(y_out[0][k]+" + "+y_out[1][k]+" i"); }
+				 */
 
 				// //////////////////////////////////////////////////////////////////////////////////
 				// /////////*************************************************************************
@@ -282,7 +345,7 @@ public class Main {
 						+ (endTime - startTime);
 
 			}
-//System.out.println(error_calc_str(encodeddata,received_data,received_data.length()));
+
 			int decode[] = new int[data_block_size];
 			int decoded_data[] = new int[data.length()];
 			int count = 0;
@@ -292,15 +355,14 @@ public class Main {
 				// decoder
 				dec.decoder_log_map_it(received_data.substring(i1, i1 + 132),
 						1, data_block_size, luk);
-				
-				
+
 				leuk1 = dec.get_leuk();
 
 				y1 = dec.getY();
 				dec.decoder_log_map_it(received_data.substring(i1, i1 + 132),
 						2, data_block_size, leuk1);
 				// LLR2 = dec.getLLR1();
-			
+
 				I2 = dec.get_interleave_table();
 				leuk2 = dec.get_leuk();
 				R2 = dec.getR();
@@ -392,6 +454,7 @@ public class Main {
 		System.out.println("Total Time with every thing: " + (total_time)
 				/ 1000000 + " ms");
 		System.out.println("Error count = " + error + " / " + size_data);
+
 	}
 
 	static int error_calc(String rawdata_in, int[] decoded_data, int count) {
@@ -400,21 +463,6 @@ public class Main {
 		if (rawdata_in.length() == count) {
 			for (int i = 0; i < rawdata_in.length(); ++i) {
 				if (((int) rawdata[i] - 48) != decoded_data[i]) {
-					error++;
-				}
-			}
-			return error;
-		} else {
-			return 677;
-		}
-	}
-	static int error_calc_str(String rawdata_in, String decoded_data, int count) {
-		int error = 0;
-		char rawdata[] = rawdata_in.toCharArray();
-		char decoded[] = decoded_data.toCharArray();
-		if (rawdata_in.length() == count) {
-			for (int i = 0; i < rawdata_in.length(); ++i) {
-				if (((int) rawdata[i] - 48) !=((int) decoded[i] - 48)) {
 					error++;
 				}
 			}
