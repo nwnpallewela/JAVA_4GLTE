@@ -38,7 +38,7 @@ public class Main {
 			double transmitter[]=new double[5];
 			double receiver[]=new double[5];
 
-		for (int var = 0; var < 2; ++var) {
+		for (int var = 0; var < 5; ++var) {
 		
 		
 		
