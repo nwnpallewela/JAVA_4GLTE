@@ -17,7 +17,12 @@ import weka.core.matrix.Matrix;
  * @author User
  */
 public class Main {
+	
+	
+	
 	static ComplexMatrix H;
+	
+	
 
 	/**
 	 * @param args
@@ -26,6 +31,18 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		// //////////////////////////////////////////////////// don't change the
 		// block size
+		int f_size=1000;
+		for(f_size=1000;f_size<=5000;f_size=f_size+5000){
+			//cout<<f_size<<endl;
+			System.out.println("file size= 320*"+f_size);
+			double transmitter[]=new double[5];
+			double receiver[]=new double[5];
+
+		for (int var = 0; var < 2; ++var) {
+		
+		
+		
+		
 		final int data_block_size = 40;
 		double[][] fftout;
 		double[][] ifftout;
@@ -75,13 +92,13 @@ public class Main {
 		// ////////////////////////////////////////////////////
 		double startTime = System.nanoTime();
 
-		int size_data = 320 * 10000; // bit size should be a multiple of 320
+		int size_data = 320 * f_size; // bit size should be a multiple of 320
 
 		double endTime = System.nanoTime(); // create data file
 		double duration = (endTime - startTime);
-		System.out
+	/*	System.out
 				.println("datagen runtime =  " + (duration / 1000000) + " ms");
-		System.out.println(Rsq);
+		System.out.println(Rsq);*/
 		// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		startTime = System.nanoTime();
 		readData read = new readData();
@@ -350,7 +367,7 @@ public class Main {
 		}
 
 		total_time = System.nanoTime() - total_time - duration;
-		System.out
+	/*	System.out
 				.println("*********************************************************");
 		read.closeFile();
 		System.out.println();
@@ -390,8 +407,28 @@ public class Main {
 				+ " ms");
 		System.out.println();
 		System.out.println("Total Time with every thing: " + (total_time)
-				/ 1000000 + " ms");
+				/ 1000000 + " ms");*/
 		System.out.println("Error count = " + error + " / " + size_data);
+		 transmitter[var]=(encode_time_full + modulate_time_full + fft_time_full
+					+ ifft_time_full + multiplexing_time_full
+					) / 1000000;
+		 receiver[var]=( demapper_time_full + equalizer_time_full
+					+ demodulator_time_full + decoder_time_full) / 1000000;
+	////////////////////////////////////////////////////////////////////////
+		}
+		System.out.println("transmitter time");
+		for (int var = 0; var < 5; ++var) {
+			//cout<<transmitter[var]<<endl;
+			System.out.println(transmitter[var]);
+		}
+		//cout<<endl;
+		System.out.println("reciever time");
+		for (int var = 0; var < 5; ++var) {
+				//cout<<receiver[var]<<endl;
+			System.out.println(receiver[var]);
+			}
+		//cout<<endl;
+		}
 	}
 
 	static int error_calc(String rawdata_in, int[] decoded_data, int count) {
